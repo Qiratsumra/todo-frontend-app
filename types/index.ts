@@ -37,3 +37,27 @@ export interface Task {
 }
 
 export type FilterType = "all" | "completed" | "pending" | "dueSoon" | "highPriority" | "High" | "Medium" | "Low";
+export interface Comment {
+  id: string;
+  text: string;
+  user?: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  dueDate?: Date;
+  priority?: "High" | "Medium" | "Low";
+  project?: string;
+  tags?: string[];
+  subtasks?: Subtask[];
+  attachments?: Attachment[];
+  comments?: Comment[]; // <-- Add this
+}
+export interface Comment {
+  id: string;
+  text: string;
+  user?: string;
+}
