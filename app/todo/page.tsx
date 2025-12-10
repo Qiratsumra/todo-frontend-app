@@ -17,15 +17,11 @@ const mapApiTaskToTask = (apiTask: ApiTask): Task => {
   };
 
   return {
-  ...apiTask,
-  id: apiTask.id.toString(),
-  priority: priorityMap[apiTask.priority],
-  dueDate: apiTask.dueDate ? new Date(apiTask.dueDate) : undefined,
-  completedAt: "",
-  createdAt: "",
-  title: "",
-  completed: false
-};
+    ...apiTask,
+    id: apiTask.id.toString(),
+    priority: priorityMap[apiTask.priority],
+    dueDate: apiTask.dueDate ? new Date(apiTask.dueDate) : undefined,
+  };
 };
 
 const TodoPage = () => {
