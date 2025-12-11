@@ -7,7 +7,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function SignInPage() {
+export default function SignInPageForm() {
     const router = useRouter();
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState(false);
