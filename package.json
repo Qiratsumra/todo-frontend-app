@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    
     "dev": "next dev",
     "build": "better-auth migrate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "npx better-auth migrate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -30,6 +30,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@better-auth/cli": "^1.4.6",
     "@faker-js/faker": "^10.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
