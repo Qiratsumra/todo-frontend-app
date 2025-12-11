@@ -37,7 +37,6 @@ const formSchema = z.object({
   dueDate: z.string().optional(),
 });
 
-// Type inferred from schema - THIS IS THE KEY FIX
 type FormValues = z.infer<typeof formSchema>;
 
 interface TaskFormProps {
@@ -53,7 +52,7 @@ export function TaskForm({ onTaskAdded }: TaskFormProps) {
     defaultValues: {
       title: "",
       description: "",
-      priority: "none" as const, // Add 'as const' for literal type
+      priority: "none" as const,
       tags: "",
       dueDate: "",
     },
@@ -85,9 +84,6 @@ export function TaskForm({ onTaskAdded }: TaskFormProps) {
       };
 
       const apiUrl = getApiUrl();
-      console.log("API URL:", apiUrl);
-      console.log("Sending data:", taskData);
-
       const response = await fetch(`${apiUrl}/tasks`, {
         method: "POST",
         headers: {
@@ -98,28 +94,16 @@ export function TaskForm({ onTaskAdded }: TaskFormProps) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Server error:", errorText);
         throw new Error(`Failed to create task: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
-      console.log("Task created:", result);
-
-      form.reset({
-        title: "",
-        description: "",
-        priority: "none" as const,
-        tags: "",
-        dueDate: "",
-      });
-
+      form.reset();
       onTaskAdded();
     } catch (err: unknown) {
       console.error("Error creating task:", err);
-
       if (err instanceof Error) {
         if (err.message.includes("Failed to fetch")) {
-          setError(`Cannot connect to server at ${getApiUrl()}. Make sure the backend is running.`);
+          setError(`Cannot connect to server. Check your internet connection.`);
         } else {
           setError(err.message);
         }
@@ -133,130 +117,140 @@ export function TaskForm({ onTaskAdded }: TaskFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="w-full space-y-4">
         {error && (
-          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+          <div className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
             <div className="font-medium">Error</div>
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter task title" {...field} disabled={isSubmitting} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* Title - Full Width */}
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title *</FormLabel>
+              <FormControl>
+                {/* text-base prevents iOS zoom */}
+                <Input 
+                  placeholder="Enter task title" 
+                  {...field} 
+                  disabled={isSubmitting} 
+                  className="text-base md:text-sm"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter task description (optional)"
-                      className="min-h-[100px]"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* Description - Full Width */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter task description (optional)"
+                  className="min-h-[80px] md:min-h-[100px] text-base md:text-sm resize-none"
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags</FormLabel>
+        {/* Grid for Priority and Date - Stacks on Mobile, Side-by-Side on Desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="priority"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Priority</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isSubmitting}
+                >
                   <FormControl>
+                    <SelectTrigger className="text-base md:text-sm">
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="none">No Priority</SelectItem>
+                    <SelectItem value="low">Low Priority</SelectItem>
+                    <SelectItem value="medium">Medium Priority</SelectItem>
+                    <SelectItem value="high">High Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="dueDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Due Date</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
                     <Input
-                      placeholder="e.g., Work, Personal, Study"
+                      type="date"
+                      className="pl-10 text-base md:text-sm block w-full"
                       {...field}
                       disabled={isSubmitting}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    disabled={isSubmitting}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">No Priority</SelectItem>
-                      <SelectItem value="low">Low Priority</SelectItem>
-                      <SelectItem value="medium">Medium Priority</SelectItem>
-                      <SelectItem value="high">High Priority</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>Choose task priority level</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* Tags - Full Width */}
+        <FormField
+          control={form.control}
+          name="tags"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tags</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="e.g., Work, Personal"
+                  {...field}
+                  disabled={isSubmitting}
+                  className="text-base md:text-sm"
+                />
+              </FormControl>
+              <FormDescription className="text-xs">
+                Comma separated tags
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-            <FormField
-              control={form.control}
-              name="dueDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Due Date</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                      <Input
-                        type="date"
-                        className="pl-10"
-                        {...field}
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="pt-4">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting || !form.formState.isValid}
-              >
-                {isSubmitting ? "Adding..." : "Add Task"}
-              </Button>
-            </div>
-          </div>
+        {/* Submit Button */}
+        <div className="pt-2">
+          <Button
+            type="submit"
+            className="w-full h-11 md:h-10 text-base md:text-sm font-medium"
+            disabled={isSubmitting || !form.formState.isValid}
+          >
+            {isSubmitting ? "Adding..." : "Add Task"}
+          </Button>
         </div>
       </form>
     </Form>

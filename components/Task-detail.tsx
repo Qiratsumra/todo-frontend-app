@@ -4,28 +4,23 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  Calendar,
   Check,
-  ChevronDown,
-  Tag,
   Trash2,
-  Users,
   Plus,
-  Paperclip,
   X,
 } from "lucide-react";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form";
-import { Task } from "@/types"; // Import Task
+} from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Task } from "@/types";
 
 interface TaskDetailProps {
   task: Task | null;
@@ -92,11 +87,12 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
       tags: task?.tags || [],
       subtasks: task?.subtasks || [],
     });
-  }, [task]);
+  }, [task, form]);
 
   if (!task) {
     return (
-      <div className="w-96 border-l border-gray-200 bg-white p-6 flex flex-col items-center justify-center text-center">
+      // Responsive Empty State
+      <div className="w-full h-full border-l border-gray-200 bg-white p-6 flex flex-col items-center justify-center text-center">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <Check className="w-8 h-8 text-gray-400" />
         </div>
@@ -112,7 +108,6 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
     setIsSaving(true);
     
     try {
-      // Map priority string back to number for API
       const priorityMap: { [key: string]: number } = {
         'none': 0,
         'low': 1,
@@ -130,11 +125,6 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
         completed: task.completed,
       };
 
-      console.log("=== SAVING TASK ===");
-      console.log("Task ID:", task.id);
-      console.log("API URL:", `${API_URL}/tasks/${task.id}`);
-      console.log("Update Data:", JSON.stringify(updateData, null, 2));
-
       const response = await fetch(`${API_URL}/tasks/${task.id}`, {
         method: 'PUT',
         headers: { 
@@ -143,26 +133,20 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
         body: JSON.stringify(updateData)
       });
 
-      console.log("Response Status:", response.status);
-      console.log("Response OK:", response.ok);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Server error response:", errorText);
         throw new Error(`Failed to update task: ${response.status} - ${errorText}`);
       }
       
       const updated = await response.json();
       console.log("Task updated successfully:", updated);
-      
       alert("Task saved successfully!");
       
       if (onTaskUpdated) {
         onTaskUpdated();
       }
     } catch (error) {
-      console.error("=== ERROR SAVING TASK ===");
-      console.error(error);
+      console.error("Error saving task:", error);
       alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsSaving(false);
@@ -187,27 +171,36 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
   };
 
   return (
-    <aside className="w-[380px] border-l border-gray-200 bg-white p-6 flex flex-col">
+    // Responsive Container: w-full to fill parent (which handles width), h-full for layout
+    <aside className="w-full h-full bg-white p-4 md:p-6 flex flex-col">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+          
+          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <FormField
               control={form.control}
               name="title"
               render={({ field }) => (
-                <FormItem className="w-full">
+                <FormItem className="w-full mr-2">
                   <FormControl>
-                    <Input {...field} className="text-2xl font-bold border-none focus-visible:ring-0 px-0" />
+                    <Input 
+                      {...field} 
+                      className="text-xl md:text-2xl font-bold border-none focus-visible:ring-0 px-0 placeholder:text-gray-400" 
+                      placeholder="Task Title"
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
-            <Button variant="ghost" size="icon" onClick={onClose} type="button">
-              <X className="w-5 h-5" />
+            {/* Close button - visually important on mobile overlay */}
+            <Button variant="ghost" size="icon" onClick={onClose} type="button" className="shrink-0">
+              <X className="w-6 h-6 text-gray-500" />
             </Button>
           </div>
 
-          <div className="flex-1 space-y-6 overflow-y-auto pr-2">
+          {/* Scrollable Content */}
+          <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
             <FormField
               control={form.control}
               name="description"
@@ -215,13 +208,14 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
                 <FormItem>
                   <FormLabel className="text-sm font-semibold text-gray-500">Description</FormLabel>
                   <FormControl>
-                    <Textarea {...field} placeholder="Add a description..." className="min-h-[100px]" />
+                    <Textarea {...field} placeholder="Add a description..." className="min-h-[100px] resize-none" />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Responsive Grid: 1 column on mobile, 2 on tablet/desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="priority"
@@ -265,13 +259,13 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
                 <FormItem>
                   <FormLabel className="text-sm font-semibold text-gray-500">Tags</FormLabel>
                   <FormControl>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[42px]">
                       {field.value?.map((tag, index) => (
-                        <div key={index} className="bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded-full flex items-center">
+                        <div key={index} className="bg-blue-50 text-blue-700 text-xs font-medium px-2 py-1 rounded-full flex items-center">
                           {tag}
                           <button
                             type="button"
-                            className="ml-1 text-gray-500 hover:text-gray-800"
+                            className="ml-1 text-blue-400 hover:text-blue-700"
                             onClick={() => {
                               const newTags = [...field.value!];
                               newTags.splice(index, 1);
@@ -283,8 +277,8 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
                         </div>
                       ))}
                       <Input
-                        placeholder="+ Add Tag"
-                        className="border-none focus-visible:ring-0 h-auto p-1"
+                        placeholder={field.value?.length === 0 ? "+ Add Tag" : "+"}
+                        className="border-none focus-visible:ring-0 h-6 p-0 w-20 text-sm min-w-[60px]"
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && e.currentTarget.value) {
                             e.preventDefault();
@@ -303,7 +297,7 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
               <h3 className="text-sm font-semibold text-gray-500 mb-2">Subtasks</h3>
               <div className="space-y-2">
                 {form.watch("subtasks")?.map((subtask, index) => (
-                  <div key={subtask.id} className="flex items-center gap-3">
+                  <div key={subtask.id} className="flex items-center gap-3 group">
                     <input
                       type="checkbox"
                       checked={subtask.completed}
@@ -316,18 +310,29 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
                     />
                     <Input
                       defaultValue={subtask.title}
-                      className="border-none focus-visible:ring-0 h-auto p-0"
+                      className={`border-none focus-visible:ring-0 h-auto p-0 ${subtask.completed ? 'line-through text-gray-400' : ''}`}
                       onChange={(e) => {
                         const newSubtasks = [...form.getValues("subtasks")!];
                         newSubtasks[index].title = e.target.value;
                         form.setValue("subtasks", newSubtasks);
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newSubtasks = [...form.getValues("subtasks")!];
+                        newSubtasks.splice(index, 1);
+                        form.setValue("subtasks", newSubtasks);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Plus className="w-4 h-4 text-gray-500" />
+              <div className="flex items-center gap-2 mt-3 pt-2 border-t border-dashed">
+                <Plus className="w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Add a subtask"
                   value={newSubtask}
@@ -344,12 +349,14 @@ const TaskDetail = ({ task, onClose, onTaskUpdated, onDelete }: TaskDetailProps)
             </div>
           </div>
 
-          <div className="mt-auto pt-6 border-t flex items-center justify-between">
-            <Button variant="outline" size="sm" type="button" onClick={handleDelete}>
+          {/* Footer Actions */}
+          <div className="mt-auto pt-4 md:pt-6 border-t flex items-center justify-between gap-4 bg-white z-10">
+            <Button variant="outline" size="sm" type="button" onClick={handleDelete} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete Task
+              <span className="hidden sm:inline">Delete Task</span>
+              <span className="sm:hidden">Delete</span>
             </Button>
-            <Button size="sm" type="submit" disabled={isSaving}>
+            <Button size="sm" type="submit" disabled={isSaving} className="min-w-[100px]">
               {isSaving ? "Saving..." : "Save changes"}
             </Button>
           </div>

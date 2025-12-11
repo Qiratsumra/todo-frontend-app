@@ -5,6 +5,8 @@ import MainContent from "@/components/main-content";
 import TaskDetail from "@/components/Task-detail";
 import { Task, ApiTask, FilterType } from "@/types";
 import { TaskForm } from "@/components/task-form";
+// Optional: You can use lucide-react or heroicons for the menu icon
+import { Menu } from "lucide-react"; 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -32,6 +34,9 @@ const TodoPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  
+  // NEW: State for mobile sidebar toggle
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -49,7 +54,6 @@ const TodoPage = () => {
     fetchTasks();
   }, []);
 
-  // Filter logic based on search, priority/status filter, and tag
   useEffect(() => {
     let updatedTasks = [...tasks];
 
@@ -77,9 +81,6 @@ const TodoPage = () => {
 
         updatedTasks = updatedTasks.filter((task) => {
           if (!task.dueDate) return false;
-          // task.dueDate is ALREADY a Date object from mapApiTaskToTask mapping?
-          // Line 23: dueDate: apiTask.dueDate ? new Date(apiTask.dueDate) : undefined,
-          // So yes, it is a Date.
           const taskDate = new Date(task.dueDate);
           taskDate.setHours(0, 0, 0, 0);
           return taskDate >= today && taskDate <= sevenDaysFromNow && !task.completed;
@@ -89,7 +90,6 @@ const TodoPage = () => {
           (task) => task.priority === "High" && !task.completed
         );
       } else {
-        // Filter by priority (High/Medium/Low)
         updatedTasks = updatedTasks.filter((task) => task.priority === activeFilter);
       }
     }
@@ -108,10 +108,14 @@ const TodoPage = () => {
 
   const handleFilterChange = (filter: FilterType) => {
     setActiveFilter(filter);
+    // NEW: Close mobile menu after selection
+    setIsMobileMenuOpen(false);
   };
 
   const handleTagFilter = (tag: string) => {
     setActiveTag(tag);
+    // NEW: Close mobile menu after selection
+    setIsMobileMenuOpen(false);
   };
 
   const handleTaskAdded = async () => {
@@ -151,32 +155,90 @@ const TodoPage = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans">
-      <Sidebar
-        onSearch={handleSearch}
-        tasks={tasks}
-        onFilterChange={handleFilterChange}
-        onTagFilter={handleTagFilter}
-        activeFilter={activeFilter}
-      />
-      <MainContent
-        tasks={filteredTasks}
-        onTaskSelect={handleSelectTask}
-        onAddTask={() => setIsAddModalOpen(true)}
-        onToggleComplete={handleToggleComplete}
-      />
-      {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          onClose={handleCloseDetail}
-          onTaskUpdated={handleTaskUpdated}
-          onDelete={() => handleTaskDelete(selectedTask.id)}
+    // Changed: Added overflow-hidden relative to contain absolute positioned elements
+    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden relative">
+      
+      {/* 1. Mobile Sidebar Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
+      {/* 2. Responsive Sidebar Wrapper */}
+      {/* Mobile: Fixed, slide-in. Desktop: Relative, always visible. */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+          md:relative md:translate-x-0 md:shadow-none
+          ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
+        `}
+      >
+        <Sidebar
+          onSearch={handleSearch}
+          tasks={tasks}
+          onFilterChange={handleFilterChange}
+          onTagFilter={handleTagFilter}
+          activeFilter={activeFilter}
+        />
+      </aside>
+
+      {/* 3. Main Content Wrapper */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile Header with Hamburger Menu */}
+        <div className="md:hidden bg-white p-4 border-b flex items-center justify-between">
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="text-gray-600 hover:text-gray-900 focus:outline-none"
+          >
+            {/* Simple Hamburger Icon SVG */}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="font-bold text-lg">My Tasks</span>
+          <div className="w-6" /> {/* Spacer for centering */}
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          <MainContent
+            tasks={filteredTasks}
+            onTaskSelect={handleSelectTask}
+            onAddTask={() => setIsAddModalOpen(true)}
+            onToggleComplete={handleToggleComplete}
+          />
+        </div>
+      </div>
+
+      {/* 4. Responsive Task Detail Panel */}
+      {/* Mobile: Fixed Fullscreen Overlay. Desktop: Static Sidebar on right. */}
+      {selectedTask && (
+        <div className="fixed inset-0 z-40 md:static md:inset-auto md:z-0 md:w-96 md:border-l bg-white shadow-2xl md:shadow-none overflow-y-auto">
+           {/* Mobile Back Button (Only visible on mobile inside the Detail view) */}
+           <div className="md:hidden p-4 border-b flex items-center">
+              <button 
+                onClick={handleCloseDetail}
+                className="text-gray-600 flex items-center gap-2"
+              >
+                ← Back to List
+              </button>
+           </div>
+           
+           <TaskDetail
+            task={selectedTask}
+            onClose={handleCloseDetail}
+            onTaskUpdated={handleTaskUpdated}
+            onDelete={() => handleTaskDelete(selectedTask.id)}
+          />
+        </div>
+      )}
+
+      {/* Add Task Modal - Made Responsive with margins */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setIsAddModalOpen(false)}
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
