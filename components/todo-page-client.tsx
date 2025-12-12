@@ -5,7 +5,6 @@ import MainContent from "@/components/main-content";
 import TaskDetail from "@/components/Task-detail";
 import { Task, ApiTask, FilterType } from "@/types";
 import { TaskForm } from "@/components/task-form";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface TodoPageClientProps {
@@ -157,7 +156,6 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans overflow-hidden relative pt-16 md:pt-0">
-      
       {/* Mobile Sidebar Backdrop */}
       {isMobileMenuOpen && (
         <div 
