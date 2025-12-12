@@ -4,20 +4,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signUpAction } from "@/app/actions/auth";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function SignUpForm() {
+    const router = useRouter();
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState(false);
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
         setError("");
         setLoading(true);
         
         try {
-            const result = await signUpAction(formData) as unknown as { error?: string };
+            const formData = new FormData(e.currentTarget);
+            const result = await signUpAction(formData) as unknown as {
+                success: any; error?: string 
+};
             
             if (result?.error) {
                 setError(result.error);
+            }
+             else if (result?.success) {
+                router.push("/todo");
             }
         } catch (err: any) {
             setError(err.message || "An error occurred during sign up");
@@ -29,7 +38,7 @@ export default function SignUpForm() {
     return(
         <div className="flex flex-col items-center justify-center h-screen gap-4">
             <h1 className="text-2xl font-black">Sign Up</h1>
-            <form action={handleSubmit} className="flex flex-col gap-3 w-64">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-64">
                 <Input type="text" name="name" placeholder="Name" required/>
                 <Input type="email" name="email" placeholder="Email" required/>
                 <Input 
