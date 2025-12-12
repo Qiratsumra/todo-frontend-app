@@ -12,11 +12,13 @@ export default function SignInPageForm() {
     const [error, setError] = useState<string>("");
     const [loading, setLoading] = useState(false);
 
-    async function handleSubmit(formData: FormData) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
         setError("");
         setLoading(true);
 
         try {
+            const formData = new FormData(e.currentTarget);
             const result = await signInAction(formData);
 
             // Check if there's an error in the result
@@ -32,11 +34,10 @@ export default function SignInPageForm() {
         }
     }
 
-
     return (
         <div className="flex flex-col items-center justify-center h-screen gap-4">
             <h1 className="text-2xl font-black">Sign In</h1>
-            <form action={handleSubmit} className="flex flex-col gap-3 w-64">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-3 w-64">
                 <Input
                     type="email"
                     name="email"
@@ -65,5 +66,5 @@ export default function SignInPageForm() {
                 </Link>
             </p>
         </div>
-    )
+    );
 }
