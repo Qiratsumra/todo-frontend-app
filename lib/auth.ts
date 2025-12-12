@@ -13,17 +13,6 @@ export const auth = betterAuth({
     
     secret: process.env.BETTER_AUTH_SECRET!,
     
-    session: {
-        expiresIn: 60 * 60 * 24 * 7, // 7 days
-        updateAge: 60 * 60 * 24, // 1 day
-    },
+    plugins: [nextCookies()]
     
-    plugins: [
-        nextCookies(),
-        jwt({  // ADD JWT PLUGIN
-            jwt: {
-                expirationTime: "7d", // Token ki expiry
-            }
-        })
-    ] 
 })
