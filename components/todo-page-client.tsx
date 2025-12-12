@@ -5,7 +5,6 @@ import MainContent from "@/components/main-content";
 import TaskDetail from "@/components/Task-detail";
 import { Task, ApiTask, FilterType } from "@/types";
 import { TaskForm } from "@/components/task-form";
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 interface TodoPageClientProps {
   user: {
@@ -39,9 +38,23 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Get API URL safely
+  const API_URL = typeof window !== 'undefined' 
+    ? process.env.NEXT_PUBLIC_API_URL 
+    : '';
 
   const fetchTasks = async () => {
+    if (!API_URL) {
+      setError("API URL is not configured. Please check your environment variables.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      setError(null);
       const response = await fetch(`${API_URL}/tasks`);
       if (!response.ok) throw new Error("Failed to fetch tasks");
       const data = await response.json();
@@ -49,6 +62,9 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
       setTasks(mappedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch tasks");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -128,6 +144,8 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
   };
 
   const handleTaskDelete = async (taskId: string) => {
+    if (!API_URL) return;
+    
     try {
       const response = await fetch(`${API_URL}/tasks/${taskId}`, { method: "DELETE" });
       if (!response.ok) throw new Error("Failed to delete task");
@@ -135,10 +153,13 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
       if (selectedTask?.id === taskId) setSelectedTask(null);
     } catch (error) {
       console.error("Error deleting task:", error);
+      setError("Failed to delete task");
     }
   };
 
   const handleToggleComplete = async (startedTask: Task) => {
+    if (!API_URL) return;
+    
     const updatedTask = { ...startedTask, completed: !startedTask.completed };
     setTasks(tasks.map((t) => (t.id === startedTask.id ? updatedTask : t)));
 
@@ -151,8 +172,24 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
       if (!response.ok) await fetchTasks();
     } catch (error) {
       console.error("Error updating task completion:", error);
+      await fetchTasks(); // Revert on error
     }
   };
+
+  // Error state UI
+  if (error && !API_URL) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Configuration Error</h2>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <p className="text-sm text-gray-500">
+            Make sure NEXT_PUBLIC_API_URL is set in your .env.local file or Vercel environment variables.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans overflow-hidden relative pt-16 md:pt-0">
@@ -199,12 +236,30 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-y-auto">
-          <MainContent
-            tasks={filteredTasks}
-            onTaskSelect={handleSelectTask}
-            onAddTask={() => setIsAddModalOpen(true)}
-            onToggleComplete={handleToggleComplete}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500">Loading tasks...</div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-full p-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+                <p className="text-red-800 mb-2">Error: {error}</p>
+                <button 
+                  onClick={fetchTasks}
+                  className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <MainContent
+              tasks={filteredTasks}
+              onTaskSelect={handleSelectTask}
+              onAddTask={() => setIsAddModalOpen(true)}
+              onToggleComplete={handleToggleComplete}
+            />
+          )}
         </div>
       </div>
 
