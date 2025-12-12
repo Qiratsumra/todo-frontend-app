@@ -19,6 +19,7 @@ import { Task, FilterType } from "@/types";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { signOutAction } from "@/app/actions/auth";
 
 interface SidebarProps {
   onSearch?: (query: string) => void;
@@ -50,7 +51,7 @@ const Sidebar = ({
     if (!task.dueDate) return false;
     const dueDate = new Date(task.dueDate);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time for accurate comparison
+    today.setHours(0, 0, 0, 0);
     const sevenDaysFromNow = new Date(today);
     sevenDaysFromNow.setDate(today.getDate() + 7);
     return dueDate >= today && dueDate <= sevenDaysFromNow && !task.completed;
@@ -89,8 +90,17 @@ const Sidebar = ({
     onTagFilter && onTagFilter(tag);
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOutAction();
+      setShowUserMenu(false);
+      router.push("/signin");
+    } catch (error) {
+      console.error("Sign out error:", error);
+    }
+  };
+
   return (
-    // Changed: Uses h-full instead of h-screen to respect parent container
     <div className="w-64 h-full bg-gray-50 border-r border-gray-200 flex flex-col">
 
       {/* Fixed Header Section */}
@@ -121,7 +131,6 @@ const Sidebar = ({
       </div>
 
       {/* Scrollable Navigation Area */}
-      {/* Changed: Added flex-1 and min-h-0 to allow proper scrolling within flex container */}
       <nav className="flex-1 overflow-y-auto px-4 py-2 space-y-6 min-h-0 custom-scrollbar">
 
         {/* Main Nav */}
@@ -340,11 +349,7 @@ const Sidebar = ({
                   <hr className="my-1" />
                   <button
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    onClick={async () => {
-                      await authClient.signOut();
-                      router.push("/signin");
-                      setShowUserMenu(false);
-                    }}
+                    onClick={handleSignOut}
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Logout</span>
