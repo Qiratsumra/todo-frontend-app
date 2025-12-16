@@ -41,10 +41,8 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Get API URL safely
-  const API_URL = typeof window !== 'undefined' 
-    ? process.env.NEXT_PUBLIC_API_URL 
-    : '';
+  // Get API URL - move inside component to ensure it's available
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   const fetchTasks = async () => {
     if (!API_URL) {
@@ -55,14 +53,24 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
 
     try {
       setError(null);
+      setIsLoading(true);
+      console.log("Fetching from:", `${API_URL}/tasks`);
       const response = await fetch(`${API_URL}/tasks`);
-      if (!response.ok) throw new Error("Failed to fetch tasks");
+      console.log("Response status:", response.status);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch tasks (Status: ${response.status})`);
+      }
       const data = await response.json();
+      console.log("Fetched tasks:", data);
       const mappedTasks = data.map(mapApiTaskToTask);
       setTasks(mappedTasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
-      setError(error instanceof Error ? error.message : "Failed to fetch tasks");
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        setError(`Cannot connect to API at ${API_URL}. Make sure your backend is running.`);
+      } else {
+        setError(error instanceof Error ? error.message : "Failed to fetch tasks");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +78,7 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
 
   useEffect(() => {
     fetchTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -192,7 +201,7 @@ const TodoPageClient = ({ user }: TodoPageClientProps) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden relative pt-16 md:pt-0">
+    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden relative">
       {/* Mobile Sidebar Backdrop */}
       {isMobileMenuOpen && (
         <div 

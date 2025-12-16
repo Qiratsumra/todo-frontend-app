@@ -59,7 +59,7 @@ export function TaskForm({ onTaskAdded }: TaskFormProps) {
   });
 
   const getApiUrl = () => {
-    return "https://fullstack-todo-backend-1-p9wb.onrender.com/api";
+    return "https://todo-phase-3-backend.onrender.com/api";
   };
 
   const onSubmit = async (data: FormValues) => {
